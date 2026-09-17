@@ -54,7 +54,7 @@ Nguoi dung truy cap Grafana qua trinh duyet tren laptop, tablet hoac dien thoai.
 │   │   │   ├── mqtt_subscriber.py
 │   │   │   └── .env
 │   │   ├── data/raw/water_level.csv
-│   │   ├── ai/
+│   │   ├── ai/venv/train.py
 │   │   ├── grafana/
 │   │   └── influxdb/
 │   └── mqtt-data/
@@ -65,7 +65,7 @@ Nguoi dung truy cap Grafana qua trinh duyet tren laptop, tablet hoac dien thoai.
 └── .gitignore
 ```
 
-Ba thu muc `ai`, `grafana` va `influxdb` duoc giu trong cau truc project de phuc vu cac thanh phan tuong ung trong workflow. Snapshot hien tai khong co file cau hinh rieng duoc track trong cac thu muc nay; cac service can duoc cau hinh va chay rieng tren may chu.
+Thu muc `ai` chua script huan luyen va du doan realtime. Cac thu muc `grafana` va `influxdb` duoc giu trong cau truc project de phuc vu cac service tuong ung trong workflow; service can duoc cau hinh va chay rieng tren may chu.
 
 ## 4. Dinh dang telemetry
 
@@ -206,7 +206,74 @@ CSV co ba cot:
 ts,level,level_rate
 ```
 
-## 9. Cloudflare Tunnel va WSS
+## 9. Model AI va thuat toan
+
+Script AI nam tai `12A09/mqtt-code/ai/venv/train.py`. Ten thu muc `venv` la vi tri hien tai cua script va cac model artifact; script nay khong phai file kich hoat moi truong Python.
+
+### Mo hinh
+
+- Mo hinh hoi quy: `sklearn.linear_model.SGDRegressor`.
+- Ham mat mat: `squared_error`.
+- Regularization: `l2`, `alpha=1e-4`.
+- Learning rate: `invscaling`, `eta0=0.01`.
+- Dau vao: `level` va `level_rate`.
+- Dau ra: `ai_s`, thoi gian uoc tinh con lai den muc nguy hiem, tinh bang giay.
+- Muc nguy hiem: `DANGER_LEVEL_CM = 13.0` cm.
+- Gioi han `ai_s`: tu `0` den `21600` giay, tuong duong 6 gio.
+
+### Tien xu ly va bootstrap training
+
+Truoc khi dua vao mo hinh, hai feature duoc chuan hoa bang `sklearn.preprocessing.StandardScaler`. Lan chay dau tien, script huan luyen tu dataset bootstrap duoc nhung truc tiep trong `train.py`, voi cac cot `level`, `level_rate` va `time_to_danger_s`.
+
+Model va scaler duoc luu chung bang Joblib trong bundle `flood_ai_online_cm.joblib`. Neu bundle da ton tai, script nap lai bundle thay vi huan luyen bootstrap tu dau.
+
+### Du doan realtime
+
+Script doc cac dong moi duoc append vao `12A09/mqtt-data/raw/telecsv.csv`. Moi dong hop le duoc xu ly theo luong:
+
+```text
+(level, level_rate)
+  |
+  v
+StandardScaler
+  |
+  v
+SGDRegressor -> ai_s (seconds)
+  |
+  v
+risk_score (0..100)
+```
+
+Ket qua duoc ghi vao `12A09/mqtt-data/processed/ai_data_out.csv` voi cac cot:
+
+```text
+ts,level,level_rate,ai_s,risk_score
+```
+
+`risk_score` la thang diem so tu 0 den 100, duoc tinh tu `ai_s` bang cac nguong co dinh. Thoi gian den muc nguy hiem cang ngan thi diem rui ro cang cao; Grafana co the dung diem nay de dat nguong mau va canh bao.
+
+### Hoc online hybrid
+
+Sau moi du doan, neu `level_rate > 0.01` cm/s, script tao pseudo-label vat ly:
+
+```text
+y_phys = (DANGER_LEVEL_CM - level) / level_rate
+```
+
+Gia tri duoc gioi han trong khoang `0..21600` giay. Sau moi 20 mau hop le, mo hinh duoc cap nhat bang `SGDRegressor.partial_fit`, sau do bundle model moi duoc ghi lai vao file Joblib. Cach nay ket hop model bootstrap voi tin hieu vat ly tu telemetry realtime ma khong can nhan label thu cong cho tung mau.
+
+### Chay AI
+
+Tren Orange Pi/Raspberry Pi, cai cac package can thiet va chay:
+
+```bash
+python3 -m pip install numpy pandas scikit-learn joblib
+python3 12A09/mqtt-code/ai/venv/train.py
+```
+
+Script se export lai toan bo cac dong hop le dang co trong `telecsv.csv` vao file output khi khoi dong, sau do tiep tuc theo doi dong moi.
+
+## 10. Cloudflare Tunnel va WSS
 
 Theo workflow, ESP32 ket noi den domain:
 
@@ -224,7 +291,7 @@ Can dam bao:
 - Firewall cho phep ket noi noi bo giua `cloudflared` va Mosquitto.
 - ESP32 dung dung hostname, port va TLS configuration cua tunnel.
 
-## 10. InfluxDB va Grafana
+## 11. InfluxDB va Grafana
 
 Subscriber ghi measurement `telemetry_raw` vao bucket `12A09`. Trong Grafana:
 
@@ -235,7 +302,7 @@ Subscriber ghi measurement `telemetry_raw` vao bucket `12A09`. Trong Grafana:
 
 Grafana co the duoc expose qua HTTPS/Cloudflare de nguoi dung xem dashboard tu laptop, tablet hoac smartphone ma khong can mo truc tiep port InfluxDB ra Internet.
 
-## 11. Kiem tra nhanh
+## 12. Kiem tra nhanh
 
 Kiem tra file raw co duoc ghi:
 
@@ -261,7 +328,7 @@ Kiem tra subscriber co dang chay:
 ps aux | grep mqtt_subscriber.py
 ```
 
-## 12. Xu ly su co
+## 13. Xu ly su co
 
 | Hien tuong | Kiem tra |
 | --- | --- |
