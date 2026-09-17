@@ -1,4 +1,4 @@
-# 12A09 MQTT Telemetry and Flood Monitoring
+FLOOD RISK PREDICTION WITH ONLINE LEARNING
 
 Project thu thap du lieu muc nuoc tu ESP32 qua MQTT, luu tru du lieu tho, dong thoi dua du lieu vao InfluxDB de theo doi tren Grafana. He thong duoc thiet ke de chay tren Orange Pi/Raspberry Pi va cho phep ESP32 ket noi tu Internet qua MQTT over WebSocket Secure (WSS) va Cloudflare Tunnel.
 
