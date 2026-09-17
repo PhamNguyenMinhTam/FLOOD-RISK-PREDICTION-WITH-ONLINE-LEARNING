@@ -52,9 +52,12 @@ Nguoi dung truy cap Grafana qua trinh duyet tren laptop, tablet hoac dien thoai.
 │   │   ├── json_to_csv.py
 │   │   ├── subscriber/
 │   │   │   ├── mqtt_subscriber.py
-│   │   │   └── .env
+│   │   │   └── .env.example
 │   │   ├── data/raw/water_level.csv
-│   │   ├── ai/venv/train.py
+│   │   ├── ai/
+│   │   │   ├── train.py
+│   │   │   └── models/flood_ai_online_cm.joblib
+│   │   ├── requirements.txt
 │   │   ├── grafana/
 │   │   └── influxdb/
 │   └── mqtt-data/
@@ -119,7 +122,7 @@ python -m pip install paho-mqtt influxdb-client
 
 ## 6. Cau hinh subscriber
 
-Tao file `12A09/mqtt-code/subscriber/.env` hoac khai bao bien moi truong truoc khi chay:
+Sao chep `12A09/mqtt-code/subscriber/.env.example` thanh `.env`, sau do nap cac bien moi truong truoc khi chay. File `.env` khong duoc commit vao Git.
 
 ```bash
 export MQTT_HOST=127.0.0.1
@@ -166,13 +169,13 @@ Khi khoi dong, chuong trinh:
 5. Ghi `level` va `level_rate` vao InfluxDB neu InfluxDB da duoc cau hinh.
 6. Tu dong thu lai ket noi sau loi voi khoang nghi `RECONNECT_SLEEP`.
 
-Duong dan JSONL trong code hien tai la:
+Duong dan JSONL mac dinh trong code la:
 
 ```text
-/home/mpi5iot/Desktop/12A09/mqtt-data/raw/telemetry.jsonl
+12A09/mqtt-data/raw/telemetry.jsonl
 ```
 
-Khi chay tren may khac, cap nhat `JSONL_PATH` trong `mqtt_subscriber.py` cho phu hop voi duong dan repository tren may do.
+Duong dan duoc tinh tu root cua repository. Khi deploy sang vi tri khac, co the ghi de bang bien `JSONL_PATH`.
 
 ## 8. Chuyen JSONL sang CSV
 
@@ -208,7 +211,7 @@ ts,level,level_rate
 
 ## 9. Model AI va thuat toan
 
-Script AI nam tai `12A09/mqtt-code/ai/venv/train.py`. Ten thu muc `venv` la vi tri hien tai cua script va cac model artifact; script nay khong phai file kich hoat moi truong Python.
+Script AI nam tai `12A09/mqtt-code/ai/train.py`. Model dang dung duoc luu tai `12A09/mqtt-code/ai/models/flood_ai_online_cm.joblib`.
 
 ### Mo hinh
 
@@ -267,8 +270,8 @@ Gia tri duoc gioi han trong khoang `0..21600` giay. Sau moi 20 mau hop le, mo hi
 Tren Orange Pi/Raspberry Pi, cai cac package can thiet va chay:
 
 ```bash
-python3 -m pip install numpy pandas scikit-learn joblib
-python3 12A09/mqtt-code/ai/venv/train.py
+python3 -m pip install -r 12A09/mqtt-code/requirements.txt
+python3 12A09/mqtt-code/ai/train.py
 ```
 
 Script se export lai toan bo cac dong hop le dang co trong `telecsv.csv` vao file output khi khoi dong, sau do tiep tuc theo doi dong moi.

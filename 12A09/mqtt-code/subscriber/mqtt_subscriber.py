@@ -16,13 +16,17 @@ MQTT_HOST = os.getenv("MQTT_HOST", "127.0.0.1")
 MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
 MQTT_TOPIC = os.getenv("MQTT_TOPIC", "12A09/raw/telemetry")
 
-# Path lưu JSONL raw
-# JSONL_PATH = os.getenv("JSONL_PATH", "telemetry.jsonl")
-JSONL_PATH = "/home/mpi5iot/Desktop/12A09/mqtt-data/raw/telemetry.jsonl"
+# Path luu JSONL raw. Co the ghi de bang bien moi truong khi deploy.
+CODE_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(os.path.dirname(CODE_DIR))
+JSONL_PATH = os.getenv(
+    "JSONL_PATH",
+    os.path.join(PROJECT_ROOT, "mqtt-data", "raw", "telemetry.jsonl"),
+)
 
 # InfluxDB v2 config
 INFLUX_URL = os.getenv("INFLUX_URL", "http://127.0.0.1:8086")
-INFLUX_TOKEN = os.getenv("INFLUX_TOKEN", "VqJ4uKzHjqzBiaYATUvZJKvAXsqRTpLGo1sdEtQC2pdH_yEAVYqDD9njdMaf7NO6WUydV-jhqAYOruxljZqG7w==")
+INFLUX_TOKEN = os.getenv("INFLUX_TOKEN", "")
 INFLUX_ORG = os.getenv("INFLUX_ORG", "mworkste")
 INFLUX_BUCKET = os.getenv("INFLUX_BUCKET", "12A09")
 INFLUX_MEAS_RAW = os.getenv("INFLUX_MEAS_RAW", "telemetry_raw")
